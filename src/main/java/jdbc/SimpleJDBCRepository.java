@@ -37,7 +37,8 @@ public class SimpleJDBCRepository {
     private static final String findUserByNameSQL = "SELECT * FROM MYUSERS WHERE firstname = ?";
     private static final String findAllUserSQL = "SELECT * FROM MYUSERS";
 
-    public Long createUser(User user) throws SQLException {
+    // Обратите внимание: throws SQLException удалено
+    public Long createUser(User user) {
         try (PreparedStatement ps = connection.prepareStatement(createUserSQL, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getFirstName());
             ps.setString(2, user.getLastName());
@@ -49,11 +50,13 @@ public class SimpleJDBCRepository {
                     return rs.getLong(1);
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return null;
     }
 
-    public User findUserById(Long userId) throws SQLException {
+    public User findUserById(Long userId) {
         try (PreparedStatement ps = connection.prepareStatement(findUserByIdSQL)) {
             ps.setLong(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -66,11 +69,13 @@ public class SimpleJDBCRepository {
                     return user;
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return null;
     }
 
-    public User findUserByName(String userName) throws SQLException {
+    public User findUserByName(String userName) {
         try (PreparedStatement ps = connection.prepareStatement(findUserByNameSQL)) {
             ps.setString(1, userName);
             try (ResultSet rs = ps.executeQuery()) {
@@ -83,11 +88,13 @@ public class SimpleJDBCRepository {
                     return user;
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return null;
     }
 
-    public List<User> findAllUser() throws SQLException {
+    public List<User> findAllUser() {
         List<User> users = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(findAllUserSQL);
              ResultSet rs = ps.executeQuery()) {
@@ -99,25 +106,31 @@ public class SimpleJDBCRepository {
                 user.setAge(rs.getInt("age"));
                 users.add(user);
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return users;
     }
 
-    public User updateUser(User user) throws SQLException {
+    public User updateUser(User user) {
         try (PreparedStatement ps = connection.prepareStatement(updateUserSQL)) {
             ps.setString(1, user.getFirstName());
             ps.setString(2, user.getLastName());
             ps.setInt(3, user.getAge());
             ps.setLong(4, user.getId());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return user;
     }
 
-    public void deleteUser(Long userId) throws SQLException {
+    public void deleteUser(Long userId) {
         try (PreparedStatement ps = connection.prepareStatement(deleteUserSQL)) {
             ps.setLong(1, userId);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }
