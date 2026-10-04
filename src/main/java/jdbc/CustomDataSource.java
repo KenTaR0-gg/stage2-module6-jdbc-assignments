@@ -3,6 +3,7 @@ package jdbc;
 import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -31,24 +32,39 @@ public class CustomDataSource implements DataSource {
     public static CustomDataSource getInstance() {
         if (instance == null) {
             Properties props = new Properties();
-            // Безопасное чтение файла
-            try (InputStream is = CustomDataSource.class.getClassLoader().getResourceAsStream("app.properties")) {
-                if (is != null) { // Защита от NullPointerException, если файла нет
-                    props.load(is);
+            try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("app.properties")) {
+                if (is == null) {
+                    throw new RuntimeException("Файл app.properties не найден в папке resources!");
                 }
+                props.load(is);
             } catch (Exception e) {
-                // Игнорируем ошибку, ниже применятся дефолтные значения
+                throw new RuntimeException("Ошибка загрузки файла настроек: " + e.getMessage(), e);
             }
 
-            // Ищем ключи по всем возможным названиям (Autocode часто использует разные форматы)
-            String driver = props.getProperty("jdbc.driver", props.getProperty("driver", "org.postgresql.Driver"));
-            String url = props.getProperty("jdbc.url", props.getProperty("url", "jdbc:postgresql://localhost:5432/myfirstdb"));
-            String user = props.getProperty("jdbc.user", props.getProperty("user", props.getProperty("username", "postgres")));
-            String password = props.getProperty("jdbc.password", props.getProperty("password", "123"));
+            // Ищем ключи по возможным вариантам без жесткой привязки к Postgres
+            String driver = getProp(props, "jdbc.driver", "driver", "db.driver");
+            String url = getProp(props, "jdbc.url", "url", "db.url");
+            String user = getProp(props, "jdbc.user", "user", "username", "db.user");
+            String password = getProp(props, "jdbc.password", "password", "db.password");
+            if (password == null) password = "";
+
+            if (driver == null || url == null) {
+                throw new RuntimeException("В файле свойств не найдены ключи подключения. Доступные ключи: " + props.keySet());
+            }
 
             instance = new CustomDataSource(driver, url, password, user);
         }
         return instance;
+    }
+
+    private static String getProp(Properties props, String... keys) {
+        for (String key : keys) {
+            String val = props.getProperty(key);
+            if (val != null && !val.trim().isEmpty()) {
+                return val.trim();
+            }
+        }
+        return null;
     }
 
     @Override
