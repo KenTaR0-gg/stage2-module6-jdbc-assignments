@@ -5,10 +5,12 @@ import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 @Getter
@@ -29,8 +31,22 @@ public class CustomDataSource implements DataSource {
     }
 
     public static CustomDataSource getInstance() {
-
-        if (instance == null) instance = new CustomDataSource("org.postgresql.Driver", "jdbc:postgresql://localhost:5432/myfirstdb", "123", "postgres");
+        if (instance == null) {
+            Properties props = new Properties();
+            try (InputStream is = CustomDataSource.class.getClassLoader().getResourceAsStream("app.properties")) {
+                props.load(is);
+                // Обратите внимание на порядок параметров в вашем конструкторе: driver, url, password, name
+                instance = new CustomDataSource(
+                        props.getProperty("jdbc.driver"),
+                        props.getProperty("jdbc.url"),
+                        props.getProperty("jdbc.password"),
+                        props.getProperty("jdbc.user")
+                );
+            } catch (Exception e) {
+                // Если файла нет (например, при локальном запуске), оставляем ваш вариант как запасной
+                instance = new CustomDataSource("org.postgresql.Driver", "jdbc:postgresql://localhost:5432/myfirstdb", "123", "postgres");
+            }
+        }
         return instance;
     }
 

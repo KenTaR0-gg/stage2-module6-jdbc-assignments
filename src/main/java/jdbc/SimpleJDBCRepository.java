@@ -20,13 +20,17 @@ public class SimpleJDBCRepository {
             CustomDataSource dataSource = CustomDataSource.getInstance();
             CustomConnector connector = new CustomConnector();
 
+            // КРИТИЧЕСКИ ВАЖНО ДЛЯ ТЕСТОВ: принудительная загрузка драйвера HSQLDB
+            Class.forName(dataSource.getDriver());
+
             this.connection = connector.getConnection(
                     dataSource.getUrl(),
                     dataSource.getName(),
                     dataSource.getPassword()
             );
         } catch (Exception e) {
-            System.out.println("Не удалось подключиться: " + e.getMessage());
+            // Ошибку лучше пробрасывать дальше, чтобы видеть реальную причину в логах
+            throw new RuntimeException("Не удалось подключиться: " + e.getMessage(), e);
         }
     }
 
