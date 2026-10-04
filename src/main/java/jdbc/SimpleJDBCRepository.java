@@ -20,8 +20,10 @@ public class SimpleJDBCRepository {
             CustomDataSource dataSource = CustomDataSource.getInstance();
             CustomConnector connector = new CustomConnector();
 
-            // КРИТИЧЕСКИ ВАЖНО ДЛЯ ТЕСТОВ: принудительная загрузка драйвера HSQLDB
-            Class.forName(dataSource.getDriver());
+            // Защита от NullPointerException перед загрузкой драйвера
+            if (dataSource.getDriver() != null && !dataSource.getDriver().trim().isEmpty()) {
+                Class.forName(dataSource.getDriver());
+            }
 
             this.connection = connector.getConnection(
                     dataSource.getUrl(),
@@ -29,8 +31,8 @@ public class SimpleJDBCRepository {
                     dataSource.getPassword()
             );
         } catch (Exception e) {
-            // Ошибку лучше пробрасывать дальше, чтобы видеть реальную причину в логах
-            throw new RuntimeException("Не удалось подключиться: " + e.getMessage(), e);
+            e.printStackTrace(); // Это поможет вывести точную причину ошибки в логи Autocode
+            throw new RuntimeException("Критическая ошибка подключения: " + e.getMessage(), e);
         }
     }
 
@@ -41,7 +43,6 @@ public class SimpleJDBCRepository {
     private static final String findUserByNameSQL = "SELECT * FROM MYUSERS WHERE firstname = ?";
     private static final String findAllUserSQL = "SELECT * FROM MYUSERS";
 
-    // Обратите внимание: throws SQLException удалено
     public Long createUser(User user) {
         try (PreparedStatement ps = connection.prepareStatement(createUserSQL, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getFirstName());

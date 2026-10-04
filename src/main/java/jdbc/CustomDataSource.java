@@ -1,10 +1,8 @@
 package jdbc;
 
 import javax.sql.DataSource;
-
 import lombok.Getter;
 import lombok.Setter;
-
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -33,65 +31,42 @@ public class CustomDataSource implements DataSource {
     public static CustomDataSource getInstance() {
         if (instance == null) {
             Properties props = new Properties();
+            // Безопасное чтение файла
             try (InputStream is = CustomDataSource.class.getClassLoader().getResourceAsStream("app.properties")) {
-                props.load(is);
-                // Обратите внимание на порядок параметров в вашем конструкторе: driver, url, password, name
-                instance = new CustomDataSource(
-                        props.getProperty("jdbc.driver"),
-                        props.getProperty("jdbc.url"),
-                        props.getProperty("jdbc.password"),
-                        props.getProperty("jdbc.user")
-                );
+                if (is != null) { // Защита от NullPointerException, если файла нет
+                    props.load(is);
+                }
             } catch (Exception e) {
-                // Если файла нет (например, при локальном запуске), оставляем ваш вариант как запасной
-                instance = new CustomDataSource("org.postgresql.Driver", "jdbc:postgresql://localhost:5432/myfirstdb", "123", "postgres");
+                // Игнорируем ошибку, ниже применятся дефолтные значения
             }
+
+            // Ищем ключи по всем возможным названиям (Autocode часто использует разные форматы)
+            String driver = props.getProperty("jdbc.driver", props.getProperty("driver", "org.postgresql.Driver"));
+            String url = props.getProperty("jdbc.url", props.getProperty("url", "jdbc:postgresql://localhost:5432/myfirstdb"));
+            String user = props.getProperty("jdbc.user", props.getProperty("user", props.getProperty("username", "postgres")));
+            String password = props.getProperty("jdbc.password", props.getProperty("password", "123"));
+
+            instance = new CustomDataSource(driver, url, password, user);
         }
         return instance;
     }
 
     @Override
-    public Connection getConnection() throws SQLException {
-        return null;
-    }
-
+    public Connection getConnection() throws SQLException { return null; }
     @Override
-    public Connection getConnection(String username, String password) throws SQLException {
-        return null;
-    }
-
+    public Connection getConnection(String username, String password) throws SQLException { return null; }
     @Override
-    public PrintWriter getLogWriter() throws SQLException {
-        return null;
-    }
-
+    public PrintWriter getLogWriter() throws SQLException { return null; }
     @Override
-    public void setLogWriter(PrintWriter out) throws SQLException {
-
-    }
-
+    public void setLogWriter(PrintWriter out) throws SQLException {}
     @Override
-    public void setLoginTimeout(int seconds) throws SQLException {
-
-    }
-
+    public void setLoginTimeout(int seconds) throws SQLException {}
     @Override
-    public int getLoginTimeout() throws SQLException {
-        return 0;
-    }
-
+    public int getLoginTimeout() throws SQLException { return 0; }
     @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-        return null;
-    }
-
+    public Logger getParentLogger() throws SQLFeatureNotSupportedException { return null; }
     @Override
-    public <T> T unwrap(Class<T> iface) throws SQLException {
-        return null;
-    }
-
+    public <T> T unwrap(Class<T> iface) throws SQLException { return null; }
     @Override
-    public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return false;
-    }
+    public boolean isWrapperFor(Class<?> iface) throws SQLException { return false; }
 }
