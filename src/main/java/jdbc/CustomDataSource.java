@@ -7,6 +7,7 @@ import lombok.Setter;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
@@ -40,15 +41,13 @@ public class CustomDataSource implements DataSource {
                 // Игнорируем, если файла нет
             }
 
-            // Читаем ИМЕННО ТЕ ключи, которые платформа засветила в логах
             String driver = getProp(props, "postgres.driver", "jdbc.driver");
             String url = getProp(props, "postgres.url", "jdbc.url");
-            String user = getProp(props, "postgres.name", "jdbc.user"); // В этой задаче name = username
+            String user = getProp(props, "postgres.name", "jdbc.user", "username");
             String password = getProp(props, "postgres.password", "jdbc.password");
 
             if (password == null) password = "";
 
-            // Если запуск идет не на платформе, а у вас локально — используем запасной вариант
             if (driver == null || url == null) {
                 driver = "org.postgresql.Driver";
                 url = "jdbc:postgresql://localhost:5432/myfirstdb";
@@ -71,10 +70,28 @@ public class CustomDataSource implements DataSource {
         return null;
     }
 
+    // ИСПРАВЛЕНИЕ: Теперь метод возвращает реальное подключение, а не null
     @Override
-    public Connection getConnection() throws SQLException { return null; }
+    public Connection getConnection() throws SQLException {
+        try {
+            Class.forName(this.driver);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Драйвер не найден: " + this.driver, e);
+        }
+        return DriverManager.getConnection(this.url, this.name, this.password);
+    }
+
+    // ИСПРАВЛЕНИЕ: То же самое для перегруженного метода
     @Override
-    public Connection getConnection(String username, String password) throws SQLException { return null; }
+    public Connection getConnection(String username, String password) throws SQLException {
+        try {
+            Class.forName(this.driver);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Драйвер не найден: " + this.driver, e);
+        }
+        return DriverManager.getConnection(this.url, username, password);
+    }
+
     @Override
     public PrintWriter getLogWriter() throws SQLException { return null; }
     @Override
