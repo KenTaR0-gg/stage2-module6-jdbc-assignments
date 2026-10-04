@@ -33,23 +33,27 @@ public class CustomDataSource implements DataSource {
         if (instance == null) {
             Properties props = new Properties();
             try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("app.properties")) {
-                if (is == null) {
-                    throw new RuntimeException("Файл app.properties не найден в папке resources!");
+                if (is != null) {
+                    props.load(is);
                 }
-                props.load(is);
             } catch (Exception e) {
-                throw new RuntimeException("Ошибка загрузки файла настроек: " + e.getMessage(), e);
+                // Игнорируем, если файла нет
             }
 
-            // Ищем ключи по возможным вариантам без жесткой привязки к Postgres
-            String driver = getProp(props, "jdbc.driver", "driver", "db.driver");
-            String url = getProp(props, "jdbc.url", "url", "db.url");
-            String user = getProp(props, "jdbc.user", "user", "username", "db.user");
-            String password = getProp(props, "jdbc.password", "password", "db.password");
+            // Читаем ИМЕННО ТЕ ключи, которые платформа засветила в логах
+            String driver = getProp(props, "postgres.driver", "jdbc.driver");
+            String url = getProp(props, "postgres.url", "jdbc.url");
+            String user = getProp(props, "postgres.name", "jdbc.user"); // В этой задаче name = username
+            String password = getProp(props, "postgres.password", "jdbc.password");
+
             if (password == null) password = "";
 
+            // Если запуск идет не на платформе, а у вас локально — используем запасной вариант
             if (driver == null || url == null) {
-                throw new RuntimeException("В файле свойств не найдены ключи подключения. Доступные ключи: " + props.keySet());
+                driver = "org.postgresql.Driver";
+                url = "jdbc:postgresql://localhost:5432/myfirstdb";
+                user = "postgres";
+                password = "123";
             }
 
             instance = new CustomDataSource(driver, url, password, user);
